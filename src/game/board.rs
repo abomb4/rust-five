@@ -1,5 +1,6 @@
 const BOARD_SIZE: usize = 19;
 
+/// A Gomoku game board
 pub(in game) struct Board {
     board: [[usize; BOARD_SIZE]; BOARD_SIZE]
 }
@@ -9,12 +10,14 @@ pub const BOARD_WHITE: usize = 1;
 pub const BOARD_BLACK: usize = 2;
 
 impl Board {
+    /// Create new empty game board
     pub fn new() -> Board {
         let board: [[usize; BOARD_SIZE]; BOARD_SIZE] = [[BOARD_NONE; BOARD_SIZE]; BOARD_SIZE];
 
         return Board { board };
     }
 
+    /// Draw game board to console
     pub fn draw(&self) {
         for i in 0..BOARD_SIZE {
             for j in 0..BOARD_SIZE {
