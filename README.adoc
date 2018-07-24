@@ -1,0 +1,6 @@
+= rust-five
+This is a console five implementation by rust.
+
+very simple and naive, don't have any referenceable content.
+
+And my english is very pool.
