@@ -1,11 +1,30 @@
-const DEFAULT_BOARD_SIZE: usize = 19;
+const DEFAULT_BOARD_SIZE: isize = 19;
 
-pub(in game) type BoardPoint = usize;
+pub(in game) type BoardPoint = isize;
 
 /// A Gomoku game board
+///
+/// <pre>
+///                     x(i)
+/// ---------------------->
+/// | 0 1 2 3 4 5 6 7 8 9
+/// | 1 + + + + + + + + +
+/// | 2 + + + + + + + + +
+/// | 3 + + + + + + + + +
+/// | 4 + + + + + + + + +
+/// | 5 + + + + + + + + +
+/// | 6 + + + + + + + + +
+/// | 7 + + + + + + + + +
+/// | 8 + + + + + + + + +
+/// | 9 + + + + + + + + +
+/// v
+/// y(j)
+/// </pre>
+///
 pub(in game) struct Board {
-    board: [[usize; DEFAULT_BOARD_SIZE]; DEFAULT_BOARD_SIZE],
-    size: usize,
+    /// Stored coordination x-axis and y-axis is reversed.
+    board: [[isize; DEFAULT_BOARD_SIZE as usize]; DEFAULT_BOARD_SIZE as usize],
+    size: isize,
 }
 
 pub const BOARD_EMPTY: BoardPoint = 0;
@@ -24,17 +43,20 @@ fn translate_board_point(target: BoardPoint) -> &'static str {
 impl Board {
     /// Create new empty game board
     pub fn new() -> Board {
-        const SIZE: usize = DEFAULT_BOARD_SIZE;
-        let board: [[usize; SIZE]; SIZE] = [[BOARD_EMPTY; SIZE]; SIZE];
+        const SIZE: usize = DEFAULT_BOARD_SIZE as usize;
+        let board: [[isize; SIZE ]; SIZE] = [[BOARD_EMPTY; SIZE]; SIZE];
 
-        return Board { board, size: SIZE };
+        return Board { board, size: SIZE as isize };
     }
 
     /// Draw game board to console
     pub fn draw(&self) {
+
+        // Stored coordination x-axis and y-axis is reversed.
+        // So we need print 2nd dimension first
         for j in 0..self.size {
             for i in 0..self.size {
-                print!("{}", self.get_board_symbol(i, j));
+                print!("{}", self.get_board_symbol(i as isize, j as isize));
             }
             println!();
         }
@@ -43,19 +65,19 @@ impl Board {
     /// Get a point from board
     ///
     /// x and y starts by 1, not 0
-    pub fn get(&self, x: usize, y: usize) -> Result<BoardPoint, String> {
+    pub fn get(&self, x: isize, y: isize) -> Result<BoardPoint, String> {
         if !self.point_range_check(x, y) {
             return Err(format!("Coordinate ({}, {}) is out of bound.", x, y));
         }
 
-        let i = x - 1;
-        let j = y - 1;
+        let i: isize = x - 1;
+        let j: isize = y - 1;
 
-        Ok(self.board[i][j])
+        Ok(self.board[i as usize][j as usize])
     }
 
     /// Place a piece to board
-    pub fn place(&mut self, x: usize, y: usize, point: BoardPoint) -> Result<BoardPoint, String> {
+    pub fn place(&mut self, x: isize, y: isize, point: BoardPoint) -> Result<BoardPoint, String> {
         let current_point = match self.get(x, y) {
             Ok(ok) => ok,
             Err(e) => return Err(e)
@@ -68,17 +90,17 @@ impl Board {
         let i = x - 1;
         let j = y - 1;
 
-        self.board[i][j] = point;
+        self.board[i as usize][j as usize] = point;
         Ok(point)
     }
 
     /// Check the range of x and y is valid
-    fn point_range_check(&self, x: usize, y: usize) -> bool {
-        if x >= self.size || x <= 0 {
+    fn point_range_check(&self, x: isize, y: isize) -> bool {
+        if x > self.size || x <= 0 {
             return false;
         }
 
-        if y >= self.size || y <= 0 {
+        if y > self.size || y <= 0 {
             return false;
         }
 
@@ -88,9 +110,9 @@ impl Board {
     ///
     /// Get board data, translate to console friendly symbol
     ///
-    fn get_board_symbol(&self, i: usize, j: usize) -> &str {
+    fn get_board_symbol(&self, i: isize, j: isize) -> &str {
         // i is x-axis, j is y-axis
-        let data = self.board[i][j];
+        let data = self.get(i + 1, j + 1).unwrap();
         let max_index = self.size - 1;
         match data {
             BOARD_WHITE => "○",
