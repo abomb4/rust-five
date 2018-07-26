@@ -35,6 +35,11 @@ impl Game {
         }
     }
 
+    /// Draw game graphic
+    pub fn draw(&self) {
+        self.board.draw()
+    }
+
     /// Initialize the game
     pub fn init(&mut self) {
         self.board.draw()

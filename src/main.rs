@@ -11,4 +11,9 @@ pub mod game;
 fn main() {
     let mut game = Game::new();
     game.init();
+    game.point(5, 5);
+    game.point(5, 10);
+    game.point(10, 10);
+    game.point(10, 12);
+    game.draw();
 }

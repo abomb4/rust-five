@@ -32,8 +32,8 @@ impl Board {
 
     /// Draw game board to console
     pub fn draw(&self) {
-        for i in 0..self.size {
-            for j in 0..self.size {
+        for j in 0..self.size {
+            for i in 0..self.size {
                 print!("{}", self.get_board_symbol(i, j));
             }
             println!();
@@ -62,7 +62,7 @@ impl Board {
         };
 
         if current_point != BOARD_EMPTY {
-            return Err(format!("Coordinate ({}, {}) is {}, not empty.",x, y, translate_board_point(current_point)))
+            return Err(format!("Coordinate ({}, {}) is {}, not empty.", x, y, translate_board_point(current_point)));
         }
 
         let i = x - 1;
@@ -89,12 +89,21 @@ impl Board {
     /// Get board data, translate to console friendly symbol
     ///
     fn get_board_symbol(&self, i: usize, j: usize) -> &str {
+        // i is x-axis, j is y-axis
         let data = self.board[i][j];
         let max_index = self.size - 1;
         match data {
             BOARD_WHITE => "○",
             BOARD_BLACK => "●",
-            BOARD_EMPTY => if i == 0 && j == 0 { "┌" } else if i == 0 && j == max_index { "┐" } else if i == max_index && j == 0 { "└" } else if i == max_index && j == max_index { "┘" } else if i == 0 { "┬" } else if i == max_index { "┴" } else if j == 0 { "├" } else if j == max_index { "┤" } else { "┼" }
+            BOARD_EMPTY => if i == 0 && j == 0 { "┏" }
+                      else if i == 0 && j == max_index { "┗" }
+                      else if i == max_index && j == 0 { "┓" }
+                      else if i == max_index && j == max_index { "┛" }
+                      else if i == 0 { "┣" }
+                      else if i == max_index { "┫" }
+                      else if j == 0 { "┳" }
+                      else if j == max_index { "┻" }
+                      else { "╋" }
             _ => panic!("Unknown board data detected.")
         }
     }
