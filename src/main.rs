@@ -61,30 +61,27 @@ fn read_input() -> (isize, isize) {
             s.pop();
         }
 
-        let mut split = s.split(" ");
-        if split.clone().count() != 2 {
-            println!("Invalid input [{}]", s);
-        } else {
-            let x_str = split.next().unwrap();
-            let y_str = split.next().unwrap();
+        let x_str = &s[0..1];
+        let y_str = &s[1..];
 
-            let x = match isize::from_str_radix(x_str, 10) {
-                Ok(v) => v,
-                Err(_e) => {
-                    println!("Invalid X input [{}]", s);
-                    continue;
-                }
-            };
+        println!("x_str is {}, y_str is {}", x_str, y_str);
 
-            let y = match isize::from_str_radix(y_str, 10) {
-                Ok(v) => v,
-                Err(_e) => {
-                    println!("Invalid Y input [{}]", s);
-                    continue;
-                }
-            };
+        let x = match isize::from_str_radix(x_str, 36) {
+            Ok(v) => v - 9,
+            Err(_e) => {
+                println!("Invalid X input [{}]", s);
+                continue;
+            }
+        };
 
-            return (x, y);
-        }
+        let y = match isize::from_str_radix(y_str, 10) {
+            Ok(v) => v,
+            Err(_e) => {
+                println!("Invalid Y input [{}]", s);
+                continue;
+            }
+        };
+
+        return (x, y);
     }
 }

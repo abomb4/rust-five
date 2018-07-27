@@ -51,20 +51,12 @@ impl Board {
 
     /// Draw game board to console
     pub fn draw(&self) {
-
         print!("  ");
+        let base_a = 'A' as u8;
         for i in 0..self.size {
-            print!("{:2}", i + 1);
+            print!(" {}", (base_a + i as u8) as char);
         }
         println!();
-
-        // Use this in next version.
-        // print!("  ");
-        // let base_a = 'A' as u8;
-        // for i in 0..self.size {
-        //     print!(" {}", (base_a + i as u8) as char);
-        // }
-        // println!();
 
         // Stored coordination x-axis and y-axis is reversed.
         // So we need print 2nd dimension first
