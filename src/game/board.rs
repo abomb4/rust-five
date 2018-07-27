@@ -52,9 +52,24 @@ impl Board {
     /// Draw game board to console
     pub fn draw(&self) {
 
+        print!("  ");
+        for i in 0..self.size {
+            print!("{:2}", i + 1);
+        }
+        println!();
+
+        // Use this in next version.
+        // print!("  ");
+        // let base_a = 'A' as u8;
+        // for i in 0..self.size {
+        //     print!(" {}", (base_a + i as u8) as char);
+        // }
+        // println!();
+
         // Stored coordination x-axis and y-axis is reversed.
         // So we need print 2nd dimension first
         for j in 0..self.size {
+            print!("{:2}", j + 1);
             for i in 0..self.size {
                 print!("{}", self.get_board_symbol(i as isize, j as isize));
             }
@@ -113,20 +128,25 @@ impl Board {
     fn get_board_symbol(&self, i: isize, j: isize) -> &str {
         // i is x-axis, j is y-axis
         let data = self.get(i + 1, j + 1).unwrap();
-        let max_index = self.size - 1;
+        // let max_index = self.size - 1;
+        // match data {
+        //     BOARD_WHITE => "○",
+        //     BOARD_BLACK => "●",
+        //     BOARD_EMPTY => if i == 0 && j == 0 { "┌" }
+        //               else if i == 0 && j == max_index { "└" }
+        //               else if i == max_index && j == 0 { "┐" }
+        //               else if i == max_index && j == max_index { "┘" }
+        //               else if i == 0 { "├" }
+        //               else if i == max_index { "┤" }
+        //               else if j == 0 { "┬" }
+        //               else if j == max_index { "┴" }
+        //               else { "┼" }
+        //     _ => panic!("Unknown board data detected.")
+        // }
         match data {
-            BOARD_WHITE => "○",
-            BOARD_BLACK => "●",
-            BOARD_EMPTY => if i == 0 && j == 0 { "┏" }
-                      else if i == 0 && j == max_index { "┗" }
-                      else if i == max_index && j == 0 { "┓" }
-                      else if i == max_index && j == max_index { "┛" }
-                      else if i == 0 { "┣" }
-                      else if i == max_index { "┫" }
-                      else if j == 0 { "┳" }
-                      else if j == max_index { "┻" }
-                      else { "╋" }
-            _ => panic!("Unknown board data detected.")
+            BOARD_WHITE => " O",
+            BOARD_BLACK => " X",
+            _ => " -"
         }
     }
 }
