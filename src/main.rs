@@ -9,59 +9,82 @@ use game::Game;
 pub mod game;
 
 fn main() {
-    win1();
-    win2();
+    let mut game = Game::new();
+
+    game.init();
+    mainloop_console(&mut game);
 }
 
-fn win1() {
-    let mut game = Game::new();
-    game.init();
-    game.point(1, 5).unwrap();
-    game.point(19, 5).unwrap();
-    game.point(1, 6).unwrap();
-    game.point(19, 6).unwrap();
-    game.point(1, 7).unwrap();
-    game.point(19, 7).unwrap();
-    game.point(1, 8).unwrap();
+/// Main game loop until game is end
+fn mainloop_console(game: &mut Game) {
 
-    let result = game.point(19, 8).unwrap();
-    game.draw();
-    match result {
-        Some(v) => println!("The game is end, winner is {}.", game::translate_player(v)),
-        None => println!("The game is not end.")
-    }
+    loop {
+        // Read input from user
+        let input = read_input();
+        let (x, y) = input;
 
-    let result = game.point(1, 9).unwrap();
-    game.draw();
-    match result {
-        Some(v) => println!("The game is end, winner is {}.", game::translate_player(v)),
-        None => println!("The game is not end.")
+        // Try point the coordinate
+        let optional_winner = match game.point(x, y) {
+            Ok(v) => v,
+            Err(e) => { println!("Failed point to ({}, {}), {}", x, y, e); continue; }
+        };
+
+        // Print
+        game.draw();
+
+        // See if there is a winner.
+        match optional_winner {
+            Some(v) => { println!("Winner is {}.", game::translate_player(v)); break; },
+            None => { }
+        };
+
     }
 }
 
-fn win2() {
-    let mut game = Game::new();
-    game.init();
-    game.point(1, 5).unwrap();
-    game.point(19, 5).unwrap();
-    game.point(1, 6).unwrap();
-    game.point(19, 6).unwrap();
-    game.point(1, 7).unwrap();
-    game.point(19, 7).unwrap();
-    game.point(1, 8).unwrap();
-    game.point(19, 8).unwrap();
+/// Loop get user coordinate input
+fn read_input() -> (isize, isize) {
 
-    let result = game.point(1, 1).unwrap();
-    game.draw();
-    match result {
-        Some(v) => println!("The game is end, winner is {}.", game::translate_player(v)),
-        None => println!("The game is not end.")
-    }
+    use std::io::{ stdin, stdout, Write };
+    use std::isize;
 
-    let result = game.point(19, 9).unwrap();
-    game.draw();
-    match result {
-        Some(v) => println!("The game is end, winner is {}.", game::translate_player(v)),
-        None => println!("The game is not end.")
+    loop {
+        let mut s = String::new();
+
+        print!("Input the coordinate(x and y delimited by space):");
+        let _ = stdout().flush();
+
+        stdin().read_line(&mut s).expect("Did not enter a correct string.");
+        if let Some('\n') = s.chars().next_back() {
+            s.pop();
+        }
+        if let Some('\r') = s.chars().next_back() {
+            s.pop();
+        }
+
+        let mut split = s.split(" ");
+        if split.clone().count() != 2 {
+            println!("Invalid input [{}]", s);
+        } else {
+            let x_str = split.next().unwrap();
+            let y_str = split.next().unwrap();
+
+            let x = match isize::from_str_radix(x_str, 10) {
+                Ok(v) => v,
+                Err(_e) => {
+                    println!("Invalid X input [{}]", s);
+                    continue;
+                }
+            };
+
+            let y = match isize::from_str_radix(y_str, 10) {
+                Ok(v) => v,
+                Err(_e) => {
+                    println!("Invalid Y input [{}]", s);
+                    continue;
+                }
+            };
+
+            return (x, y);
+        }
     }
 }
