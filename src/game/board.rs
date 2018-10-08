@@ -21,7 +21,7 @@ pub(in game) type BoardPoint = isize;
 /// y(j)
 /// </pre>
 ///
-pub(in game) struct Board {
+pub struct Board {
     /// Stored coordination x-axis and y-axis is reversed.
     board: [[isize; DEFAULT_BOARD_SIZE as usize]; DEFAULT_BOARD_SIZE as usize],
     size: isize,

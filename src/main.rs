@@ -9,9 +9,9 @@ use game::Game;
 pub mod game;
 
 fn main() {
-    let mut game = Game::new();
+    let mut game = Game::game_builder().build();
 
-    game.init();
+    game.start();
     mainloop_console(&mut game);
 }
 

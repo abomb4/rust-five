@@ -1,6 +1,9 @@
 use game::board::Board;
+use game::ai::GomokuAi;
+use game::ai::easyai::EasyAI;
 
 mod board;
+pub mod ai;
 
 type Player = u8;
 
@@ -20,7 +23,7 @@ fn player_to_board_point(p: Player) -> board::BoardPoint {
     }
 }
 
-
+/// Translate player code to White or Black
 pub fn translate_player(target: Player) -> &'static str {
     match target {
         WHITE => "White",
@@ -29,23 +32,80 @@ pub fn translate_player(target: Player) -> &'static str {
     }
 }
 
+/// Available Gomoku AI Types
+pub enum GomokuAiType {
+    None,
+    EasyAi,
+}
+
+/// Game builder
+pub struct GameBuilder {
+    first: Player,
+    ai: GomokuAiType
+}
+
+impl GameBuilder {
+
+    /// Create an game builder object
+    pub fn new() -> GameBuilder {
+        GameBuilder {
+            first: BLACK,
+            ai: GomokuAiType::None
+        }
+    }
+
+    /// Set the player who will point first
+    pub fn set_first(&mut self, player: Player) -> &Self {
+        self.first = player;
+        self
+    }
+
+    /// Set the player who will point first
+    pub fn select_ai(&mut self, ai: GomokuAiType) -> &Self {
+        self.ai = ai;
+        self
+    }
+
+    pub fn build(&self) -> Game {
+        Game::new(self.first, GameBuilder::get_ai(&self.ai))
+    }
+
+    fn get_ai(ai: &GomokuAiType) -> Option<Box<GomokuAi>> {
+        match ai {
+            GomokuAiType::EasyAi => Some(Box::new(EasyAI::new())),
+            GomokuAiType::None => None,
+            _ => panic!(format!("Invalid Gomoku AI Type detected.")),
+        }
+    }
+}
 ///
 /// A Gomoku game instance.
 ///
 pub struct Game {
     board: Board,
+    ai: Option<Box<GomokuAi>>,
     current_player: u8,
     history: Vec<(Player, usize, usize)>,
+    started: bool,
+    ended: bool,
 }
 
 impl Game {
     /// Create a new game with black first
-    pub fn new() -> Game {
+    pub fn new(first_player: Player, ai: Option<Box<GomokuAi>>) -> Game {
         Game {
             board: Board::new(),
-            current_player: BLACK,
-            history: vec![]
+            ai: ai,
+            current_player: first_player,
+            history: vec![],
+            started: false,
+            ended: false,
         }
+    }
+
+    /// Create an game builder object, equals with GameBuilder::new()
+    pub fn game_builder() -> GameBuilder {
+        GameBuilder::new()
     }
 
     /// Draw game graphic
@@ -53,18 +113,27 @@ impl Game {
         self.board.draw()
     }
 
-    /// Initialize the game
-    pub fn init(&mut self) {
-        self.board.draw()
+    /// Start the game!
+    pub fn start(&mut self) {
+        self.init();
+        self.start = true
     }
 
-    /// Start the game!
-    pub fn start(&mut self) {}
+    /// Initialize the game
+    fn init(&mut self) {
+        self.board.draw()
+    }
 
     /// Place a piece in the game
     ///
     /// Returns the winner if the game is end.
     pub fn point(&mut self, x: isize, y: isize) -> Result<Option<Player>, String> {
+        if !self.started {
+            return Err(String::from("The game has not started yet"))
+        }
+        if self.ended {
+            return Err(String::from("The game is over"))
+        }
         // place the piece to board, and check the game is end
         let place = self.board.place(x, y, player_to_board_point(self.current_player));
         if place.is_err() {
@@ -74,6 +143,7 @@ impl Game {
         self.history.push((self.current_player, x as usize, y as usize));
 
         let winner = if self.check_game_end() {
+            self.ended = true;
             Some(self.current_player)
         } else {
             None
@@ -89,6 +159,8 @@ impl Game {
     }
 
     /// Check the game is end, if end, returns true; not end the return false.
+    ///
+    /// So the winner is the top of history stack
     fn check_game_end(&self) -> bool {
         let last_point = match self.history.last() {
             Some(a) => a,
