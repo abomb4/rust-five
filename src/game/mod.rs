@@ -1,21 +1,24 @@
-use game::board::Board;
-use game::ai::GomokuAi;
-use game::ai::easyai::EasyAI;
+use self::board::Board;
+use self::ai::GomokuAi;
+use self::ai::easyai::EasyAI;
+use self::player::Player;
+use self::player::LocalHumanPlayer;
 
 mod board;
+mod player;
 pub mod ai;
 
-type Player = u8;
+type PieceType = u8;
 
 /// The two Gomoku player
-const BLACK: Player = 0;
-const WHITE: Player = 1;
+const BLACK: PieceType = 0;
+const WHITE: PieceType = 1;
 
 
 /// Player value to board point value
 ///
 /// <i>This may be a bad design</i>
-fn player_to_board_point(p: Player) -> board::BoardPoint {
+fn player_to_board_point(p: PieceType) -> board::BoardPoint {
     match p {
         BLACK => board::BOARD_BLACK,
         WHITE => board::BOARD_WHITE,
@@ -24,7 +27,7 @@ fn player_to_board_point(p: Player) -> board::BoardPoint {
 }
 
 /// Translate player code to White or Black
-pub fn translate_player(target: Player) -> &'static str {
+pub fn translate_player(target: PieceType) -> &'static str {
     match target {
         WHITE => "White",
         BLACK => "Black",
@@ -40,7 +43,7 @@ pub enum GomokuAiType {
 
 /// Game builder
 pub struct GameBuilder {
-    first: Player,
+    first: PieceType,
     ai: GomokuAiType
 }
 
@@ -55,8 +58,8 @@ impl GameBuilder {
     }
 
     /// Set the player who will point first
-    pub fn set_first(&mut self, player: Player) -> &Self {
-        self.first = player;
+    pub fn set_first(&mut self, piece: PieceType) -> &Self {
+        self.first = piece;
         self
     }
 
@@ -78,25 +81,28 @@ impl GameBuilder {
         }
     }
 }
+
 ///
 /// A Gomoku game instance.
 ///
 pub struct Game {
     board: Board,
     ai: Option<Box<GomokuAi>>,
-    current_player: u8,
-    history: Vec<(Player, usize, usize)>,
+    players: [Box<Player>; 2],
+    current_piece: u8,
+    history: Vec<(PieceType, usize, usize)>,
     started: bool,
     ended: bool,
 }
 
 impl Game {
     /// Create a new game with black first
-    pub fn new(first_player: Player, ai: Option<Box<GomokuAi>>) -> Game {
+    pub fn new(first_player: PieceType, ai: Option<Box<GomokuAi>>) -> Game {
         Game {
             board: Board::new(),
             ai: ai,
-            current_player: first_player,
+            current_piece: first_player,
+            players: [Box::new(LocalHumanPlayer::new()), Box::new(LocalHumanPlayer::new())],
             history: vec![],
             started: false,
             ended: false,
@@ -116,7 +122,7 @@ impl Game {
     /// Start the game!
     pub fn start(&mut self) {
         self.init();
-        self.start = true
+        self.started = true
     }
 
     /// Initialize the game
@@ -127,7 +133,7 @@ impl Game {
     /// Place a piece in the game
     ///
     /// Returns the winner if the game is end.
-    pub fn point(&mut self, x: isize, y: isize) -> Result<Option<Player>, String> {
+    pub fn point(&mut self, x: isize, y: isize) -> Result<Option<PieceType>, String> {
         if !self.started {
             return Err(String::from("The game has not started yet"))
         }
@@ -135,24 +141,24 @@ impl Game {
             return Err(String::from("The game is over"))
         }
         // place the piece to board, and check the game is end
-        let place = self.board.place(x, y, player_to_board_point(self.current_player));
+        let place = self.board.place(x, y, player_to_board_point(self.current_piece));
         if place.is_err() {
             return Err(place.unwrap_err())
         }
 
-        self.history.push((self.current_player, x as usize, y as usize));
+        self.history.push((self.current_piece, x as usize, y as usize));
 
         let winner = if self.check_game_end() {
             self.ended = true;
-            Some(self.current_player)
+            Some(self.current_piece)
         } else {
             None
         };
 
-        self.current_player = match self.current_player {
+        self.current_piece = match self.current_piece {
             BLACK => WHITE,
             WHITE => BLACK,
-            _ => panic!(format!("Invalid player {}.", self.current_player))
+            _ => panic!(format!("Invalid player {}.", self.current_piece))
         };
 
         Ok(winner)
