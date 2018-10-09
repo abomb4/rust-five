@@ -12,11 +12,11 @@ fn main() {
     let mut game = Game::game_builder().build();
 
     game.start();
-    mainloop_console(&mut game);
+    main_loop_console(&mut game);
 }
 
 /// Main game loop until game is end
-fn mainloop_console(game: &mut Game) {
+fn main_loop_console(game: &mut Game) {
 
     loop {
         // Read input from user
@@ -42,15 +42,15 @@ fn mainloop_console(game: &mut Game) {
 }
 
 /// Loop get user coordinate input
-fn read_input() -> (isize, isize) {
+fn read_input() -> (usize, usize) {
 
     use std::io::{ stdin, stdout, Write };
-    use std::isize;
+    use std::usize;
 
     loop {
         let mut s = String::new();
 
-        print!("Input the coordinate(x and y delimited by space):");
+        print!("Input the coordinate(x and y, like j10 or i9):");
         let _ = stdout().flush();
 
         stdin().read_line(&mut s).expect("Did not enter a correct string.");
@@ -66,7 +66,7 @@ fn read_input() -> (isize, isize) {
 
         println!("x_str is {}, y_str is {}", x_str, y_str);
 
-        let x = match isize::from_str_radix(x_str, 36) {
+        let x = match usize::from_str_radix(x_str, 36) {
             Ok(v) => v - 9,
             Err(_e) => {
                 println!("Invalid X input [{}]", s);
@@ -74,7 +74,7 @@ fn read_input() -> (isize, isize) {
             }
         };
 
-        let y = match isize::from_str_radix(y_str, 10) {
+        let y = match usize::from_str_radix(y_str, 10) {
             Ok(v) => v,
             Err(_e) => {
                 println!("Invalid Y input [{}]", s);

@@ -1,13 +1,20 @@
-const DEFAULT_BOARD_SIZE: isize = 19;
+use super::Coordination;
+use super::ArrayIndex;
 
-pub(in game) type BoardPoint = isize;
+const DEFAULT_BOARD_SIZE: usize = 19;
 
-/// A Gomoku game board
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum BoardPieceType {
+    EMPTY, BLACK, WHITE
+}
+
+
+/// A Gomoku game board coordination
 ///
 /// <pre>
 ///                     x(i)
 /// ---------------------->
-/// | 0 1 2 3 4 5 6 7 8 9
+/// | / 1 2 3 4 5 6 7 8 9
 /// | 1 + + + + + + + + +
 /// | 2 + + + + + + + + +
 /// | 3 + + + + + + + + +
@@ -23,34 +30,29 @@ pub(in game) type BoardPoint = isize;
 ///
 pub struct Board {
     /// Stored coordination x-axis and y-axis is reversed.
-    board: [[isize; DEFAULT_BOARD_SIZE as usize]; DEFAULT_BOARD_SIZE as usize],
-    size: isize,
+    board: [[BoardPieceType; DEFAULT_BOARD_SIZE]; DEFAULT_BOARD_SIZE],
+    size: usize,
 }
 
-pub const BOARD_EMPTY: BoardPoint = 0;
-pub const BOARD_WHITE: BoardPoint = 1;
-pub const BOARD_BLACK: BoardPoint = 2;
-
-fn translate_board_point(target: BoardPoint) -> &'static str {
+fn translate_board_point(target: BoardPieceType) -> &'static str {
     match target {
-        BOARD_EMPTY => "Empty",
-        BOARD_WHITE => "White",
-        BOARD_BLACK => "Black",
-        _ => panic!("Unknown board point {}.", target.clone())
+        BoardPieceType::EMPTY => "Empty",
+        BoardPieceType::WHITE => "White",
+        BoardPieceType::BLACK => "Black",
     }
 }
 
 impl Board {
     /// Create new empty game board
     pub fn new() -> Board {
-        const SIZE: usize = DEFAULT_BOARD_SIZE as usize;
-        let board: [[isize; SIZE ]; SIZE] = [[BOARD_EMPTY; SIZE]; SIZE];
+        const SIZE: usize = DEFAULT_BOARD_SIZE;
+        let board: [[BoardPieceType; SIZE ]; SIZE] = [[BoardPieceType::EMPTY; SIZE]; SIZE];
 
-        return Board { board, size: SIZE as isize };
+        return Board { board, size: SIZE };
     }
 
     /// Draw game board to console
-    pub fn draw(&self) {
+    pub fn draw_console(&self) {
         print!("  ");
         let base_a = 'A' as u8;
         for i in 0..self.size {
@@ -63,7 +65,7 @@ impl Board {
         for j in 0..self.size {
             print!("{:2}", j + 1);
             for i in 0..self.size {
-                print!("{}", self.get_board_symbol(i as isize, j as isize));
+                print!("{}", self.get_board_symbol(i, j));
             }
             println!();
         }
@@ -72,37 +74,37 @@ impl Board {
     /// Get a point from board
     ///
     /// x and y starts by 1, not 0
-    pub fn get(&self, x: isize, y: isize) -> Result<BoardPoint, String> {
+    pub fn get(&self, x: Coordination, y: Coordination) -> Result<BoardPieceType, String> {
         if !self.point_range_check(x, y) {
             return Err(format!("Coordinate ({}, {}) is out of bound.", x, y));
         }
 
-        let i: isize = x - 1;
-        let j: isize = y - 1;
+        let i = x - 1;
+        let j = y - 1;
 
-        Ok(self.board[i as usize][j as usize])
+        Ok(self.board[i][j])
     }
 
     /// Place a piece to board
-    pub fn place(&mut self, x: isize, y: isize, point: BoardPoint) -> Result<BoardPoint, String> {
+    pub fn place(&mut self, x: Coordination, y: Coordination, point: BoardPieceType) -> Result<BoardPieceType, String> {
         let current_point = match self.get(x, y) {
             Ok(ok) => ok,
             Err(e) => return Err(e)
         };
 
-        if current_point != BOARD_EMPTY {
+        if current_point != BoardPieceType::EMPTY {
             return Err(format!("Coordinate ({}, {}) is {}, not empty.", x, y, translate_board_point(current_point)));
         }
 
         let i = x - 1;
         let j = y - 1;
 
-        self.board[i as usize][j as usize] = point;
+        self.board[i][j] = point;
         Ok(point)
     }
 
     /// Check the range of x and y is valid
-    fn point_range_check(&self, x: isize, y: isize) -> bool {
+    fn point_range_check(&self, x: Coordination, y: Coordination) -> bool {
         if x > self.size || x <= 0 {
             return false;
         }
@@ -117,14 +119,14 @@ impl Board {
     ///
     /// Get board data, translate to console friendly symbol
     ///
-    fn get_board_symbol(&self, i: isize, j: isize) -> &str {
+    fn get_board_symbol(&self, i: ArrayIndex, j: ArrayIndex) -> &str {
         // i is x-axis, j is y-axis
         let data = self.get(i + 1, j + 1).unwrap();
         // let max_index = self.size - 1;
         // match data {
-        //     BOARD_WHITE => "○",
-        //     BOARD_BLACK => "●",
-        //     BOARD_EMPTY => if i == 0 && j == 0 { "┌" }
+        //     BoardPoint::WHITE => "○",
+        //     BoardPoint::BLACK => "●",
+        //     BoardPoint::EMPTY => if i == 0 && j == 0 { "┌" }
         //               else if i == 0 && j == max_index { "└" }
         //               else if i == max_index && j == 0 { "┐" }
         //               else if i == max_index && j == max_index { "┘" }
@@ -136,9 +138,9 @@ impl Board {
         //     _ => panic!("Unknown board data detected.")
         // }
         match data {
-            BOARD_WHITE => " O",
-            BOARD_BLACK => " X",
-            _ => " -"
+            BoardPieceType::WHITE => " O",
+            BoardPieceType::BLACK => " X",
+            BoardPieceType::EMPTY => " -"
         }
     }
 }
