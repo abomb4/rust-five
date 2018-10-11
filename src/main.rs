@@ -34,7 +34,7 @@ fn main_loop_console(game: &mut Game) {
 
         // See if there is a winner.
         match optional_winner {
-            Some(v) => { println!("Winner is {}.", game::translate_player(v)); break; },
+            Some(v) => { println!("Winner is {}.", v); break; },
             None => { }
         };
 

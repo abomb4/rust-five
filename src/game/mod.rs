@@ -27,6 +27,13 @@ impl PieceType {
             PieceType::BLACK => "Black"
         }
     }
+
+    pub fn to_board_piece_type(&self) -> board::BoardPieceType {
+        match self {
+            PieceType::BLACK => board::BoardPieceType::BLACK,
+            PieceType::WHITE => board::BoardPieceType::WHITE,
+        }
+    }
 }
 
 impl fmt::Display for PieceType {
@@ -35,29 +42,13 @@ impl fmt::Display for PieceType {
     }
 }
 
-/// Player value to board point value
-///
-/// <i>This may be a bad design</i>
-fn player_to_board_point(p: PieceType) -> board::BoardPieceType {
-    match p {
-        PieceType::BLACK => board::BoardPieceType::BLACK,
-        PieceType::WHITE => board::BoardPieceType::WHITE,
-    }
-}
-
-/// Translate player code to White or Black
-pub fn translate_player(target: PieceType) -> &'static str {
-    match target {
-        PieceType::WHITE => "White",
-        PieceType::BLACK => "Black",
-    }
-}
 
 /// Available Gomoku AI Types
 pub enum GomokuAiType {
     None,
     EasyAi,
 }
+
 
 /// Game builder
 pub struct GameBuilder {
@@ -158,7 +149,7 @@ impl Game {
             return Err(String::from("The game is over"))
         }
         // place the piece to board, and check the game is end
-        let place = self.board.place(x, y, player_to_board_point(self.current_piece));
+        let place = self.board.place(x, y, self.current_piece.to_board_piece_type());
         if place.is_err() {
             return Err(place.err().unwrap())
         }
@@ -190,7 +181,7 @@ impl Game {
         };
         
         // Current position information
-        let last_player_color: board::BoardPieceType = player_to_board_point(last_point.0);
+        let last_player_color: board::BoardPieceType = last_point.0.to_board_piece_type();
         let last_x = last_point.1 as isize;
         let last_y = last_point.2 as isize;
 
