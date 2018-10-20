@@ -4,6 +4,7 @@
 // The game ui using what? sdl?? console??
 //
 
+use std::char;
 use game::Game;
 
 pub mod game;

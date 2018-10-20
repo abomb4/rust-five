@@ -11,6 +11,9 @@ pub(super) trait Player {
 
     /// Get what the piece color the player holds
     fn piece_type(&self) -> PieceType;
+
+    /// Print the player common name
+    fn name(&self) -> &'static str;
 }
 
 /// Local human player
@@ -79,5 +82,39 @@ impl Player for LocalHumanPlayer {
 
     fn piece_type(&self) -> PieceType {
         self.piece
+    }
+
+    fn name(&self) -> &'static str {
+        "Human"
+    }
+}
+
+pub struct IdiotAi {
+    piece: PieceType,
+    last: (Coordination, Coordination)
+}
+
+impl IdiotAi {
+    pub fn new(piece: PieceType) -> Self {
+        IdiotAi { piece, last: (10, 10) }
+    }
+}
+
+impl Player for IdiotAi {
+    fn point(&mut self, context: &GameContext) -> (Coordination, Coordination) {
+        let (x, y) = (self.last.0 + 1, self.last.1 + 1);
+
+        self.last.0 = x;
+        self.last.1 = y;
+
+        (x, y)
+    }
+
+    fn piece_type(&self) -> PieceType {
+        self.piece
+    }
+
+    fn name(&self) -> &'static str {
+        "Idiot AI"
     }
 }

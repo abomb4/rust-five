@@ -2,10 +2,11 @@ use self::board::Board;
 use self::players::LocalHumanPlayer;
 use self::players::Player;
 use std::fmt;
+use std::char;
+use game::players::IdiotAi;
 
 mod board;
 mod players;
-pub mod ai;
 
 // TODO Make coordination a struct
 
@@ -120,7 +121,7 @@ impl Game {
                 BLACK => 0,
                 WHITE => 1
             },
-            players: [Box::new(LocalHumanPlayer::new(BLACK)), Box::new(LocalHumanPlayer::new(WHITE))],
+            players: [Box::new(IdiotAi::new(BLACK)), Box::new(LocalHumanPlayer::new(WHITE))],
             history: vec![],
             started: false,
             ended: false,
@@ -133,8 +134,22 @@ impl Game {
     }
 
     /// Draw game graphic
-    pub fn draw(&self) {
-        self.board.draw_console()
+    fn draw(&self) {
+        println!();
+        self.board.draw_console();
+        self.print_player();
+    }
+
+    /// Print who will point this time
+    fn print_player(&self) {
+        let p = self.get_current_player();
+        print!("{} ({}): ", p.name(), p.piece_type().get_name());
+    }
+
+    /// Print where is pointed
+    fn print_point(&self, x: Coordination, y: Coordination) {
+        let char_x = char::from_digit((x + 9) as u32, 36).unwrap();
+        print!("{}{}", char_x, y);
     }
 
     /// Start the game!
@@ -187,7 +202,7 @@ impl Game {
     /// Currently for the console version Gomoku game,
     /// this method prints the game board to console.
     fn init(&mut self) {
-        self.board.draw_console()
+        self.draw();
     }
 
     /// Start the game main loop, loop the two player to point, until the game is end.
@@ -197,6 +212,7 @@ impl Game {
     fn main_loop(&mut self) {
 
         let context = GameContext::new();
+        let mut fail_count = 0;
         loop {
             // Read input from player
             let (x, y) = self.get_current_player_mut().point(&context);
@@ -204,10 +220,20 @@ impl Game {
             // Try point the coordinate
             let optional_winner = match self.point(x, y) {
                 Ok(v) => v,
-                Err(e) => { println!("Failed point to ({}, {}), {}", x, y, e); continue; }
+                Err(e) => {
+                    fail_count += 1;
+                    println!("Failed point to ({}, {}), {}", x, y, e);
+
+                    // Panic if too many invalid point
+                    if fail_count >= 6 {
+                        panic!("Fail to point 6 times, may due to invalid AI implementation, panic")
+                    }
+                    continue;
+                }
             };
 
             // Print
+            self.print_point(x, y);
             self.draw();
 
             // See if there is a winner.
@@ -216,6 +242,7 @@ impl Game {
                 None => { }
             };
 
+            fail_count = 0;
         }
     }
 
