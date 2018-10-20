@@ -1,12 +1,10 @@
-use self::ai::easyai::EasyAI;
-use self::ai::GomokuAi;
 use self::board::Board;
-use self::player::LocalHumanPlayer;
-use self::player::Player;
+use self::players::LocalHumanPlayer;
+use self::players::Player;
 use std::fmt;
 
 mod board;
-mod player;
+mod players;
 pub mod ai;
 
 // TODO Make coordination a struct
@@ -82,14 +80,7 @@ impl GameBuilder {
     }
 
     pub fn build(&self) -> Game {
-        Game::new(self.first, GameBuilder::get_ai(&self.ai))
-    }
-
-    fn get_ai(ai: &GomokuAiType) -> Option<Box<GomokuAi>> {
-        match ai {
-            GomokuAiType::EasyAi => Some(Box::new(EasyAI::new())),
-            GomokuAiType::None => None,
-        }
+        Game::new(self.first)
     }
 }
 
@@ -109,11 +100,8 @@ impl GameContext {
 /// A Gomoku game instance.
 ///
 pub struct Game {
-    // TODO Remove the ai element, provide a better player and current_player management
     board: Board,
-    ai: Option<Box<GomokuAi>>,
     players: [Box<Player>; 2],
-    current_piece: PieceType,
     current_player: usize,
     history: Vec<(PieceType, Coordination, Coordination)>,
     started: bool,
@@ -122,16 +110,17 @@ pub struct Game {
 
 impl Game {
     /// Create a new game with black first
-    pub fn new(first_player: PieceType, ai: Option<Box<GomokuAi>>) -> Game {
+    pub fn new(first_player: PieceType) -> Game {
+        use game::PieceType::BLACK;
+        use game::PieceType::WHITE;
+
         Game {
             board: Board::new(),
-            ai,
-            current_piece: first_player,
             current_player: match first_player {
                 BLACK => 0,
                 WHITE => 1
             },
-            players: [Box::new(LocalHumanPlayer::new()), Box::new(LocalHumanPlayer::new())],
+            players: [Box::new(LocalHumanPlayer::new(BLACK)), Box::new(LocalHumanPlayer::new(WHITE))],
             history: vec![],
             started: false,
             ended: false,
@@ -168,25 +157,24 @@ impl Game {
         if self.ended {
             return Err(String::from("The game is over"))
         }
+
         // place the piece to board, and check the game is end
-        let place = self.board.place(x, y, self.current_piece.to_board_piece_type());
+        let current_piece = self.get_current_player().piece_type();
+        let place = self.board.place(x, y, current_piece.to_board_piece_type());
         if place.is_err() {
             return Err(place.err().unwrap())
         }
 
-        self.history.push((self.current_piece, x, y));
+        self.history.push((current_piece, x, y));
 
         let winner = if self.check_game_end() {
             self.ended = true;
-            Some(self.current_piece)
+            Some(current_piece)
         } else {
             None
         };
 
-        self.current_piece = match self.current_piece {
-            PieceType::BLACK => PieceType::WHITE,
-            PieceType::WHITE => PieceType::BLACK,
-        };
+        self.change_to_another_player();
 
         Ok(winner)
     }
@@ -211,7 +199,7 @@ impl Game {
         let context = GameContext::new();
         loop {
             // Read input from player
-            let (x, y) = self.players[self.current_player].point(&context);
+            let (x, y) = self.get_current_player_mut().point(&context);
 
             // Try point the coordinate
             let optional_winner = match self.point(x, y) {
@@ -229,6 +217,44 @@ impl Game {
             };
 
         }
+    }
+
+    // Change current player to another player, and returns new current player.
+    fn change_to_another_player(&mut self) -> &Box<Player> {
+        if self.current_player == 0 {
+            self.current_player = 1
+        } else {
+            self.current_player = 0
+        }
+        self.get_current_player()
+    }
+
+    /// Get another player, don't change the current player state
+    fn get_another_player(&self) -> &Box<Player> {
+        if self.current_player == 0 {
+            &self.players[1]
+        } else {
+            &self.players[0]
+        }
+    }
+
+    /// Get another player mutable reference, don't change the current player state
+    fn get_another_player_mut(&mut self) -> &mut Box<Player> {
+        if self.current_player == 0 {
+            &mut self.players[1]
+        } else {
+            &mut self.players[0]
+        }
+    }
+
+    /// Get the current player
+    fn get_current_player(&self) -> &Box<Player> {
+        &self.players[self.current_player]
+    }
+
+    /// Get the current player mutable reference
+    fn get_current_player_mut(&mut self) -> &mut Box<Player> {
+        &mut self.players[self.current_player]
     }
 
     /// Check the game is end, if end, returns true; not end the return false.

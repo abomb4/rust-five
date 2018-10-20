@@ -1,22 +1,28 @@
 use super::Coordination;
 use super::GameContext;
+use super::PieceType;
 
 /// Gomoku player trait,
 /// class implements this trait should provide a blocking piece pointing method.
 pub(super) trait Player {
 
+    /// Blocking method
     fn point(&mut self, context: &GameContext) -> (Coordination, Coordination);
+
+    /// Get what the piece color the player holds
+    fn piece_type(&self) -> PieceType;
 }
 
 /// Local human player
 ///
 /// Currently the game only have console ui, so the player reads stdio input.
 pub(super) struct LocalHumanPlayer {
+    piece: PieceType
 }
 
 impl LocalHumanPlayer {
-    pub fn new() -> impl Player {
-        LocalHumanPlayer {}
+    pub fn new(piece: PieceType) -> impl Player {
+        LocalHumanPlayer { piece }
     }
 
     /// Loop get user coordinate input
@@ -69,5 +75,9 @@ impl Player for LocalHumanPlayer {
 
     fn point(&mut self, context: &GameContext) -> (Coordination, Coordination) {
         LocalHumanPlayer::read_input()
+    }
+
+    fn piece_type(&self) -> PieceType {
+        self.piece
     }
 }
