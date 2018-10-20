@@ -1,16 +1,19 @@
-use self::board::Board;
-use self::ai::GomokuAi;
 use self::ai::easyai::EasyAI;
-use self::player::Player;
+use self::ai::GomokuAi;
+use self::board::Board;
 use self::player::LocalHumanPlayer;
+use self::player::Player;
 use std::fmt;
 
 mod board;
 mod player;
 pub mod ai;
 
+// TODO Make coordination a struct
+
 /// Define coordination type
 pub type Coordination = usize;
+
 /// Define array index type
 pub type ArrayIndex = usize;
 
@@ -91,13 +94,27 @@ impl GameBuilder {
 }
 
 ///
+/// Game context in game, typically is same as Game struct
+///
+pub struct GameContext {}
+
+impl GameContext {
+
+    pub fn new() -> Self {
+        GameContext {}
+    }
+}
+
+///
 /// A Gomoku game instance.
 ///
 pub struct Game {
+    // TODO Remove the ai element, provide a better player and current_player management
     board: Board,
     ai: Option<Box<GomokuAi>>,
     players: [Box<Player>; 2],
     current_piece: PieceType,
+    current_player: usize,
     history: Vec<(PieceType, Coordination, Coordination)>,
     started: bool,
     ended: bool,
@@ -110,6 +127,10 @@ impl Game {
             board: Board::new(),
             ai,
             current_piece: first_player,
+            current_player: match first_player {
+                BLACK => 0,
+                WHITE => 1
+            },
             players: [Box::new(LocalHumanPlayer::new()), Box::new(LocalHumanPlayer::new())],
             history: vec![],
             started: false,
@@ -128,14 +149,13 @@ impl Game {
     }
 
     /// Start the game!
+    ///
+    /// This function will initialize the game,
+    /// and start main game loop.
     pub fn start(&mut self) {
         self.init();
-        self.started = true
-    }
-
-    /// Initialize the game
-    fn init(&mut self) {
-        self.board.draw_console()
+        self.started = true;
+        self.main_loop();
     }
 
     /// Place a piece in the game
@@ -169,6 +189,46 @@ impl Game {
         };
 
         Ok(winner)
+    }
+
+    /// Initialize the game.
+    ///
+    /// This function will initialize the game board,
+    /// but currently is unreusable, so that is not needed.
+    ///
+    /// Currently for the console version Gomoku game,
+    /// this method prints the game board to console.
+    fn init(&mut self) {
+        self.board.draw_console()
+    }
+
+    /// Start the game main loop, loop the two player to point, until the game is end.
+    ///
+    /// In the loop, when every player placed a piece, the game updates it's board and print,
+    /// then invoke the blocking function `Player::point()`, let another place piece.
+    fn main_loop(&mut self) {
+
+        let context = GameContext::new();
+        loop {
+            // Read input from player
+            let (x, y) = self.players[self.current_player].point(&context);
+
+            // Try point the coordinate
+            let optional_winner = match self.point(x, y) {
+                Ok(v) => v,
+                Err(e) => { println!("Failed point to ({}, {}), {}", x, y, e); continue; }
+            };
+
+            // Print
+            self.draw();
+
+            // See if there is a winner.
+            match optional_winner {
+                Some(v) => { println!("Winner is {}.", v); break; },
+                None => { }
+            };
+
+        }
     }
 
     /// Check the game is end, if end, returns true; not end the return false.
