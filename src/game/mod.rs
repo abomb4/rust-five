@@ -4,6 +4,8 @@ use self::players::Player;
 use std::fmt;
 use std::char;
 use game::players::IdiotAi;
+use game::PieceType::BLACK;
+use game::PieceType::WHITE;
 
 mod board;
 mod players;
@@ -45,17 +47,15 @@ impl fmt::Display for PieceType {
 }
 
 
-/// Available Gomoku AI Types
-pub enum GomokuAiType {
-    None,
-    EasyAi,
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum GameBuilderPlayerType {
+    Human,
+    IdiotAi,
 }
-
-
 /// Game builder
 pub struct GameBuilder {
-    first: PieceType,
-    ai: GomokuAiType
+    first_player: GameBuilderPlayerType,
+    second_player: GameBuilderPlayerType
 }
 
 impl GameBuilder {
@@ -63,25 +63,35 @@ impl GameBuilder {
     /// Create an game builder object
     pub fn new() -> GameBuilder {
         GameBuilder {
-            first: PieceType::BLACK,
-            ai: GomokuAiType::None
+            first_player: GameBuilderPlayerType::Human,
+            second_player: GameBuilderPlayerType::Human
         }
     }
 
-    /// Set the player who will point first
-    pub fn set_first(&mut self, piece: PieceType) -> &Self {
-        self.first = piece;
+    /// Set the first player (Uses black piece)
+    pub fn set_first_player(&mut self, player_type: GameBuilderPlayerType) -> &mut Self {
+        self.first_player = player_type;
         self
     }
 
-    /// Set the player who will point first
-    pub fn select_ai(&mut self, ai: GomokuAiType) -> &Self {
-        self.ai = ai;
+    /// Set the second player (Uses black piece)
+    pub fn set_second_player(&mut self, player_type: GameBuilderPlayerType) -> &mut Self {
+        self.second_player = player_type;
         self
     }
 
     pub fn build(&self) -> Game {
-        Game::new(self.first)
+        Game::new(
+            GameBuilder::create_player(self.first_player, BLACK),
+            GameBuilder::create_player(self.second_player, WHITE),
+        )
+    }
+
+    fn create_player(player_type: GameBuilderPlayerType, piece: PieceType) -> Box<Player> {
+        match player_type {
+            GameBuilderPlayerType::Human => Box::new(LocalHumanPlayer::new(piece)),
+            GameBuilderPlayerType::IdiotAi => Box::new(IdiotAi::new(piece))
+        }
     }
 }
 
@@ -104,6 +114,7 @@ pub struct Game {
     board: Board,
     players: [Box<Player>; 2],
     current_player: usize,
+    // TODO Can history put reference of player into?
     history: Vec<(PieceType, Coordination, Coordination)>,
     started: bool,
     ended: bool,
@@ -111,17 +122,12 @@ pub struct Game {
 
 impl Game {
     /// Create a new game with black first
-    pub fn new(first_player: PieceType) -> Game {
-        use game::PieceType::BLACK;
-        use game::PieceType::WHITE;
+    fn new(first_player: Box<Player>, second_player: Box<Player>) -> Game {
 
         Game {
             board: Board::new(),
-            current_player: match first_player {
-                BLACK => 0,
-                WHITE => 1
-            },
-            players: [Box::new(IdiotAi::new(BLACK)), Box::new(LocalHumanPlayer::new(WHITE))],
+            current_player: 0,
+            players: [first_player, second_player],
             history: vec![],
             started: false,
             ended: false,
@@ -137,13 +143,15 @@ impl Game {
     fn draw(&self) {
         println!();
         self.board.draw_console();
-        self.print_player();
+        if !self.ended {
+            self.print_player();
+        }
     }
 
     /// Print who will point this time
     fn print_player(&self) {
         let p = self.get_current_player();
-        print!("{} ({}): ", p.name(), p.piece_type().get_name());
+        print!("{} ({}) turn to point: ", p.name(), p.piece_type().get_name());
     }
 
     /// Print where is pointed
@@ -162,6 +170,7 @@ impl Game {
         self.main_loop();
     }
 
+    // TODO Can point method returns the reference of winner player?
     /// Place a piece in the game
     ///
     /// Returns the winner if the game is end.
@@ -238,7 +247,12 @@ impl Game {
 
             // See if there is a winner.
             match optional_winner {
-                Some(v) => { println!("Winner is {}.", v); break; },
+                Some(v) => {
+                    // Current player cannot point anything because another player is wined
+                    let winner = self.get_another_player();
+                    println!("Winner is {} ({}).", winner.name(), winner.piece_type());
+                    break;
+                },
                 None => { }
             };
 

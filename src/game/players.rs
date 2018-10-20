@@ -1,3 +1,4 @@
+
 use super::Coordination;
 use super::GameContext;
 use super::PieceType;
@@ -94,9 +95,17 @@ pub struct IdiotAi {
     last: (Coordination, Coordination)
 }
 
+static mut IDIOTS: usize = 0;
 impl IdiotAi {
     pub fn new(piece: PieceType) -> Self {
-        IdiotAi { piece, last: (10, 10) }
+        let num = unsafe { IdiotAi::get_counter() };
+        IdiotAi { piece, last: (num, 0) }
+    }
+
+    unsafe fn get_counter() -> usize {
+        let num = IDIOTS;
+        IDIOTS += 1;
+        return num;
     }
 }
 
