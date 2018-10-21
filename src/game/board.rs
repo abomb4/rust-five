@@ -1,11 +1,21 @@
+use std::fmt;
 use super::ArrayIndex;
-use super::Coordination;
+use super::coord::CoordinationFlat;
 
 const DEFAULT_BOARD_SIZE: usize = 19;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum BoardPieceType {
     EMPTY, BLACK, WHITE
+}
+impl fmt::Display for BoardPieceType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            BoardPieceType::EMPTY => write!(f, "{}", "Empty"),
+            BoardPieceType::BLACK => write!(f, "{}", "Black"),
+            BoardPieceType::WHITE => write!(f, "{}", "White"),
+        }
+    }
 }
 
 
@@ -75,20 +85,21 @@ impl Board {
     /// Get a point from board
     ///
     /// x and y starts by 1, not 0
-    pub fn get(&self, x: Coordination, y: Coordination) -> Result<BoardPieceType, String> {
-        if !self.point_range_check(x, y) {
-            return Err(format!("Coordinate ({}, {}) is out of bound.", x, y));
+    pub fn get(&self, coord: CoordinationFlat) -> Result<BoardPieceType, String> {
+        if !self.point_range_check(coord) {
+            return Err(format!("Coordinate ({}, {}) is out of bound.", coord.x, coord.y));
         }
 
-        let i = x - 1;
-        let j = y - 1;
+        let i = coord.x - 1;
+        let j = coord.y - 1;
 
         Ok(self.board[i][j])
     }
 
     /// Place a piece to board
-    pub fn place(&mut self, x: Coordination, y: Coordination, point: BoardPieceType) -> Result<BoardPieceType, String> {
-        let current_point = match self.get(x, y) {
+    pub fn place(&mut self, coord: CoordinationFlat, point: BoardPieceType) -> Result<BoardPieceType, String> {
+        let (x, y) = (coord.x, coord.y);
+        let current_point = match self.get(coord) {
             Ok(ok) => ok,
             Err(e) => return Err(e)
         };
@@ -104,8 +115,19 @@ impl Board {
         Ok(point)
     }
 
+    #[test]
+    fn test() {
+        let mut b = Board::new();
+        let coord = CoordinationFlat::new(3, 3);
+        let p = BoardPieceType::WHITE;
+        b.place(coord, BoardPieceType::WHITE);
+
+        assert!(b.get(coord).unwrap() == p)
+    }
+
     /// Check the range of x and y is valid
-    fn point_range_check(&self, x: Coordination, y: Coordination) -> bool {
+    fn point_range_check(&self, coord: CoordinationFlat) -> bool {
+        let (x, y) = (coord.x, coord.y);
         if x > self.size || x <= 0 {
             return false;
         }
@@ -122,7 +144,9 @@ impl Board {
     ///
     fn get_board_symbol(&self, i: ArrayIndex, j: ArrayIndex) -> &str {
         // i is x-axis, j is y-axis
-        let data = self.get(i + 1, j + 1).unwrap();
+        // convert array index to coordination
+        let coord = CoordinationFlat::new((i + 1) as usize, (j + 1) as usize);
+        let data = self.get(coord).unwrap();
         // let max_index = self.size - 1;
         // match data {
         //     BoardPoint::WHITE => "○",

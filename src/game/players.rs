@@ -1,5 +1,4 @@
-
-use super::Coordination;
+use super::coord::CoordinationFlat;
 use super::GameContext;
 use super::PieceType;
 
@@ -8,7 +7,7 @@ use super::PieceType;
 pub(super) trait Player {
 
     /// Blocking method
-    fn point(&mut self, context: &GameContext) -> (Coordination, Coordination);
+    fn point(&mut self, context: &GameContext) -> CoordinationFlat;
 
     /// Get what the piece color the player holds
     fn piece_type(&self) -> PieceType;
@@ -30,7 +29,7 @@ impl LocalHumanPlayer {
     }
 
     /// Loop get user coordinate input
-    fn read_input() -> (usize, usize) {
+    fn read_input() -> CoordinationFlat {
 
         use std::io::{ stdin, stdout, Write };
         use std::usize;
@@ -70,14 +69,14 @@ impl LocalHumanPlayer {
                 }
             };
 
-            return (x, y);
+            return CoordinationFlat::new(x, y);
         }
     }
 }
 
 impl Player for LocalHumanPlayer {
 
-    fn point(&mut self, context: &GameContext) -> (Coordination, Coordination) {
+    fn point(&mut self, context: &GameContext) -> CoordinationFlat {
         LocalHumanPlayer::read_input()
     }
 
@@ -92,14 +91,14 @@ impl Player for LocalHumanPlayer {
 
 pub struct IdiotAi {
     piece: PieceType,
-    last: (Coordination, Coordination)
+    last: CoordinationFlat
 }
 
 static mut IDIOTS: usize = 0;
 impl IdiotAi {
     pub fn new(piece: PieceType) -> Self {
         let num = unsafe { IdiotAi::get_counter() };
-        IdiotAi { piece, last: (num, 0) }
+        IdiotAi { piece, last: CoordinationFlat::new(num, 0) }
     }
 
     unsafe fn get_counter() -> usize {
@@ -110,13 +109,13 @@ impl IdiotAi {
 }
 
 impl Player for IdiotAi {
-    fn point(&mut self, context: &GameContext) -> (Coordination, Coordination) {
-        let (x, y) = (self.last.0 + 1, self.last.1 + 1);
+    fn point(&mut self, context: &GameContext) -> CoordinationFlat {
+        let (x, y) = (self.last.x + 1, self.last.y + 1);
 
-        self.last.0 = x;
-        self.last.1 = y;
+        self.last.x = x;
+        self.last.y = y;
 
-        (x, y)
+        CoordinationFlat::new(x, y)
     }
 
     fn piece_type(&self) -> PieceType {

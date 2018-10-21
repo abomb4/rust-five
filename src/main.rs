@@ -5,8 +5,8 @@
 //
 
 use game::Game;
-use game::GameBuilderPlayerType::IdiotAi;
 use game::GameBuilderPlayerType::Human;
+use game::GameBuilderPlayerType::IdiotAi;
 
 pub mod game;
 

@@ -2,6 +2,7 @@ use game::PieceType::BLACK;
 use game::PieceType::WHITE;
 use game::players::IdiotAi;
 use self::board::Board;
+use self::coord::CoordinationFlat;
 use self::players::LocalHumanPlayer;
 use self::players::Player;
 use std::char;
@@ -10,10 +11,30 @@ use std::fmt;
 mod board;
 mod players;
 
-// TODO Make coordination a struct
+mod coord {
+    use std::fmt;
 
-/// Define coordination type
-pub type Coordination = usize;
+    /// Define coordination type
+    type Coordination = usize;
+
+    // 2D Coordination
+    #[derive(Copy, Clone)]
+    pub struct CoordinationFlat {
+        pub x: Coordination,
+        pub y: Coordination
+    }
+
+    impl CoordinationFlat {
+        pub fn new(x: Coordination, y: Coordination) -> CoordinationFlat {
+            CoordinationFlat { x, y }
+        }
+    }
+    impl fmt::Display for CoordinationFlat {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "({}, {})", self.x, self.y)
+        }
+    }
+}
 
 /// Define array index type
 pub type ArrayIndex = usize;
@@ -119,7 +140,7 @@ pub struct Game {
     players: [Box<Player>; 2],
     current_player: usize,
     // TODO Can history put reference of player into?
-    history: Vec<(PieceType, Coordination, Coordination)>,
+    history: Vec<(PieceType, CoordinationFlat)>,
     started: bool,
     ended: bool,
 }
@@ -180,7 +201,9 @@ impl Game {
     }
 
     /// Print where is pointed
-    fn print_point(&self, x: Coordination, y: Coordination) {
+    fn print_point(&self, coord: CoordinationFlat) {
+        let x = coord.x;
+        let y = coord.y;
         let char_x = char::from_digit((x + 9) as u32, 36).unwrap();
         print!("{}{}", char_x, y);
     }
@@ -198,14 +221,14 @@ impl Game {
             let context = GameContext::new(self.board.clone());
 
             // Read input from player
-            let (x, y) = self.get_current_player_mut().point(&context);
+            let coord = self.get_current_player_mut().point(&context);
 
             // Try point the coordinate
-            let optional_winner = match self.point(x, y) {
+            let optional_winner = match self.point(coord) {
                 Ok(v) => v,
                 Err(e) => {
                     fail_count += 1;
-                    println!("Failed point to ({}, {}), {}", x, y, e);
+                    println!("Failed point to ({}, {}), {}", coord.x, coord.y, e);
 
                     // Panic if too many invalid point
                     if fail_count >= 6 {
@@ -216,12 +239,12 @@ impl Game {
             };
 
             // Print
-            self.print_point(x, y);
+            self.print_point(coord);
             self.draw();
 
             // See if there is a winner.
             match optional_winner {
-                Some(v) => {
+                Some(_) => {
                     // Current player cannot point anything because another player is wined
                     let winner = self.get_another_player();
                     println!("Winner is {} ({}).", winner.name(), winner.piece_type());
@@ -238,7 +261,7 @@ impl Game {
     /// Place a piece in the game
     ///
     /// Returns the winner if the game is end.
-    fn point(&mut self, x: Coordination, y: Coordination) -> Result<Option<PieceType>, String> {
+    fn point(&mut self, coord: CoordinationFlat) -> Result<Option<PieceType>, String> {
         if !self.started {
             return Err(String::from("The game has not started yet"))
         }
@@ -248,12 +271,12 @@ impl Game {
 
         // place the piece to board, and check the game is end
         let current_piece = self.get_current_player().piece_type();
-        let place = self.board.place(x, y, current_piece.to_board_piece_type());
+        let place = self.board.place(coord, current_piece.to_board_piece_type());
         if place.is_err() {
             return Err(place.err().unwrap())
         }
 
-        self.history.push((current_piece, x, y));
+        self.history.push((current_piece, coord));
 
         let winner = if self.check_game_end() {
             self.ended = true;
@@ -313,11 +336,10 @@ impl Game {
             Some(a) => a,
             None => return false
         };
-        
+
         // Current position information
         let last_player_color: board::BoardPieceType = last_point.0.to_board_piece_type();
-        let last_x = last_point.1 as isize;
-        let last_y = last_point.2 as isize;
+        let last_coordination = last_point.1;
 
         // Define 4 non-parallel directions
         const MOVE_DIRECTION: [(isize, isize); 4] = [
@@ -327,31 +349,57 @@ impl Game {
             (1, -1)
         ];
 
+        fn move_dir(coord: &CoordinationFlat, dir: &(isize, isize)) -> Result<CoordinationFlat, &'static str> {
+            let new_x = (coord.x as isize) + dir.0;
+            let new_y = (coord.y as isize) + dir.1;
+
+            if new_x < 0 {
+                return Err("x is out of bound");
+            } else if new_y < 0 {
+                return Err("y is out of bound");
+            }
+
+            Ok(CoordinationFlat::new(new_x as usize, new_y as usize))
+        }
+
+        fn move_dir_reverse(coord: &CoordinationFlat, dir: &(isize, isize)) -> Result<CoordinationFlat, &'static str> {
+            let new_x = (coord.x as isize) - dir.0;
+            let new_y = (coord.y as isize) - dir.1;
+
+            if new_x < 0 {
+                return Err("x is out of bound")
+            } else if new_y < 0 {
+                return Err("y is out of bound")
+            }
+
+            Ok(CoordinationFlat::new(new_x as usize, new_y as usize))
+        }
+
         // Check 4 directions negative and positive directions from point position
         for dir in MOVE_DIRECTION.iter() {
             let mut score = 1;
 
             {
-                let mut pointer_x = (last_x + dir.0) as Coordination;
-                let mut pointer_y = (last_y + dir.1) as Coordination;
-                let mut a = self.board.get(pointer_x, pointer_y);
-                while a.is_ok() && a.unwrap() == last_player_color {
-                    score += 1;
-                    pointer_x = (pointer_x as isize + dir.0) as Coordination;
-                    pointer_y = (pointer_y as isize + dir.1) as Coordination;
-                    a = self.board.get(pointer_x, pointer_y);
+                let mut next_coord = move_dir(&last_coordination, dir);
+                if next_coord.is_ok() {
+                    let mut a = self.board.get(next_coord.unwrap());
+                    while next_coord.is_ok() && a.is_ok() && a.unwrap() == last_player_color {
+                        score += 1;
+                        next_coord = move_dir(&next_coord.unwrap(), dir);
+                        a = self.board.get(next_coord.unwrap());
+                    }
                 }
             }
 
             {
-                let mut pointer_x = (last_x - dir.0) as Coordination;
-                let mut pointer_y = (last_y - dir.1) as Coordination;
-                let mut a = self.board.get(pointer_x, pointer_y);
-                while a.is_ok() && a.unwrap() == last_player_color {
-                    score += 1;
-                    pointer_x = (pointer_x as isize - dir.0) as Coordination;
-                    pointer_y = (pointer_y as isize - dir.1) as Coordination;
-                    a = self.board.get(pointer_x, pointer_y);
+                let mut next_coord = move_dir_reverse(&last_coordination, dir);
+                if next_coord.is_ok() {
+                    let mut a = self.board.get(next_coord.unwrap());
+                    while next_coord.is_ok() && a.is_ok() && a.unwrap() == last_player_color {
+                        score += 1;
+                        next_coord = move_dir_reverse(&next_coord.unwrap(), dir);
+                        a = self.board.get(next_coord.unwrap());
+                    }
                 }
             }
 
