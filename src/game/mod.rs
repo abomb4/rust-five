@@ -1,11 +1,11 @@
+use game::PieceType::BLACK;
+use game::PieceType::WHITE;
+use game::players::IdiotAi;
 use self::board::Board;
 use self::players::LocalHumanPlayer;
 use self::players::Player;
-use std::fmt;
 use std::char;
-use game::players::IdiotAi;
-use game::PieceType::BLACK;
-use game::PieceType::WHITE;
+use std::fmt;
 
 mod board;
 mod players;
@@ -98,12 +98,16 @@ impl GameBuilder {
 ///
 /// Game context in game, typically is same as Game struct
 ///
-pub struct GameContext {}
+pub(in game) struct GameContext {
+    board: Board
+}
 
 impl GameContext {
 
-    pub fn new() -> Self {
-        GameContext {}
+    pub fn new(board: Board) -> Self {
+        GameContext {
+            board
+        }
     }
 }
 
@@ -139,6 +143,27 @@ impl Game {
         GameBuilder::new()
     }
 
+    /// Start the game!
+    ///
+    /// This function will initialize the game,
+    /// and start main game loop.
+    pub fn start(&mut self) {
+        self.init();
+        self.started = true;
+        self.main_loop();
+    }
+
+    /// Initialize the game.
+    ///
+    /// This function will initialize the game board,
+    /// but currently is unreusable, so that is not needed.
+    ///
+    /// Currently for the console version Gomoku game,
+    /// this method prints the game board to console.
+    fn init(&mut self) {
+        self.draw();
+    }
+
     /// Draw game graphic
     fn draw(&self) {
         println!();
@@ -160,69 +185,18 @@ impl Game {
         print!("{}{}", char_x, y);
     }
 
-    /// Start the game!
-    ///
-    /// This function will initialize the game,
-    /// and start main game loop.
-    pub fn start(&mut self) {
-        self.init();
-        self.started = true;
-        self.main_loop();
-    }
-
-    // TODO Can point method returns the reference of winner player?
-    /// Place a piece in the game
-    ///
-    /// Returns the winner if the game is end.
-    pub fn point(&mut self, x: Coordination, y: Coordination) -> Result<Option<PieceType>, String> {
-        if !self.started {
-            return Err(String::from("The game has not started yet"))
-        }
-        if self.ended {
-            return Err(String::from("The game is over"))
-        }
-
-        // place the piece to board, and check the game is end
-        let current_piece = self.get_current_player().piece_type();
-        let place = self.board.place(x, y, current_piece.to_board_piece_type());
-        if place.is_err() {
-            return Err(place.err().unwrap())
-        }
-
-        self.history.push((current_piece, x, y));
-
-        let winner = if self.check_game_end() {
-            self.ended = true;
-            Some(current_piece)
-        } else {
-            None
-        };
-
-        self.change_to_another_player();
-
-        Ok(winner)
-    }
-
-    /// Initialize the game.
-    ///
-    /// This function will initialize the game board,
-    /// but currently is unreusable, so that is not needed.
-    ///
-    /// Currently for the console version Gomoku game,
-    /// this method prints the game board to console.
-    fn init(&mut self) {
-        self.draw();
-    }
-
     /// Start the game main loop, loop the two player to point, until the game is end.
     ///
     /// In the loop, when every player placed a piece, the game updates it's board and print,
     /// then invoke the blocking function `Player::point()`, let another place piece.
     fn main_loop(&mut self) {
 
-        let context = GameContext::new();
         let mut fail_count = 0;
         loop {
+            // Initialize the game context every lap
+            // TODO Is there a better way to references the board?
+            let context = GameContext::new(self.board.clone());
+
             // Read input from player
             let (x, y) = self.get_current_player_mut().point(&context);
 
@@ -258,6 +232,39 @@ impl Game {
 
             fail_count = 0;
         }
+    }
+
+    // TODO Can I returns the reference of winner player?
+    /// Place a piece in the game
+    ///
+    /// Returns the winner if the game is end.
+    fn point(&mut self, x: Coordination, y: Coordination) -> Result<Option<PieceType>, String> {
+        if !self.started {
+            return Err(String::from("The game has not started yet"))
+        }
+        if self.ended {
+            return Err(String::from("The game is over"))
+        }
+
+        // place the piece to board, and check the game is end
+        let current_piece = self.get_current_player().piece_type();
+        let place = self.board.place(x, y, current_piece.to_board_piece_type());
+        if place.is_err() {
+            return Err(place.err().unwrap())
+        }
+
+        self.history.push((current_piece, x, y));
+
+        let winner = if self.check_game_end() {
+            self.ended = true;
+            Some(current_piece)
+        } else {
+            None
+        };
+
+        self.change_to_another_player();
+
+        Ok(winner)
     }
 
     // Change current player to another player, and returns new current player.

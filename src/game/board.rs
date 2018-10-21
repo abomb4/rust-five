@@ -1,5 +1,5 @@
-use super::Coordination;
 use super::ArrayIndex;
+use super::Coordination;
 
 const DEFAULT_BOARD_SIZE: usize = 19;
 
@@ -28,6 +28,7 @@ pub enum BoardPieceType {
 /// y(j)
 /// </pre>
 ///
+#[derive(Clone)]
 pub struct Board {
     /// Stored coordination x-axis and y-axis is reversed.
     board: [[BoardPieceType; DEFAULT_BOARD_SIZE]; DEFAULT_BOARD_SIZE],
