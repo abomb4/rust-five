@@ -89,40 +89,101 @@ impl Player for LocalHumanPlayer {
     }
 }
 
-pub struct IdiotAi {
-    piece: PieceType,
-    last: CoordinationFlat
-}
-
-static mut IDIOTS: usize = 0;
-impl IdiotAi {
-    pub fn new(piece: PieceType) -> Self {
-        let num = unsafe { IdiotAi::get_counter() };
-        IdiotAi { piece, last: CoordinationFlat::new(num, 0) }
+use game::board::Board;
+use super::Player;
+use super::super::coord::CoordinationFlat;
+use super::super::GameContext;
+use super::super::PieceType;pub(super) mod ai {
+    pub struct IdiotAi {
+        piece: PieceType,
+        last: CoordinationFlat
     }
 
-    unsafe fn get_counter() -> usize {
-        let num = IDIOTS;
-        IDIOTS += 1;
-        return num;
-    }
-}
+    static mut IDIOTS: usize = 0;
 
-impl Player for IdiotAi {
-    fn point(&mut self, context: &GameContext) -> CoordinationFlat {
-        let (x, y) = (self.last.x + 1, self.last.y + 1);
+    impl IdiotAi {
+        pub fn new(piece: PieceType) -> Self {
+            let num = unsafe { IdiotAi::get_counter() };
+            IdiotAi { piece, last: CoordinationFlat::new(num, 0) }
+        }
 
-        self.last.x = x;
-        self.last.y = y;
-
-        CoordinationFlat::new(x, y)
+        unsafe fn get_counter() -> usize {
+            let num = IDIOTS;
+            IDIOTS += 1;
+            return num;
+        }
     }
 
-    fn piece_type(&self) -> PieceType {
-        self.piece
+    impl Player for IdiotAi {
+        fn point(&mut self, context: &GameContext) -> CoordinationFlat {
+            let (x, y) = (self.last.x + 1, self.last.y + 1);
+
+            self.last.x = x;
+            self.last.y = y;
+
+            CoordinationFlat::new(x, y)
+        }
+
+        fn piece_type(&self) -> PieceType {
+            self.piece
+        }
+
+        fn name(&self) -> &'static str {
+            "Idiot AI"
+        }
     }
 
-    fn name(&self) -> &'static str {
-        "Idiot AI"
+    /// Easy AI, this may be my first game AI implementation
+    pub struct EasyAi {
+        piece: PieceType
+    }
+
+    impl EasyAi {
+        pub fn new(piece: PieceType) -> EasyAi {
+            EasyAi { piece }
+        }
+
+        /// Find which points need calculate
+        ///
+        /// Points around existing pieces within 4 distance need calculate
+        fn find_points_need_calculate(board: &Board) -> Vec<CoordinationFlat> {
+            unimplemented!()
+        }
+
+        /// Calculate a score at specific point
+        fn calculate_score(board: &Board, coord: CoordinationFlat) -> usize {
+            unimplemented!()
+        }
+    }
+
+    impl Player for EasyAi {
+
+        /// Easy AI will point!
+        ///
+        /// This AI will do this steps:
+        /// 1. If the game just start (total points lesser than 5), find templates(?).
+        /// 2. If the opponent player not playing as normal (Cannot found template),
+        ///    try the most benefit way.
+        /// 3. Calculate scores in every places around the existing pieces with 4 distance
+        fn point(&mut self, context: &GameContext) -> CoordinationFlat {
+            let board = context.board;
+            let last = context.last_point;
+            let total = context.total_pieces;
+
+            // Found which points should calculate score
+            let need_calculate = EasyAi::find_points_need_calculate(&board);
+
+            // Calculate every score
+
+            unimplemented!()
+        }
+
+        fn piece_type(&self) -> PieceType {
+            self.piece_type()
+        }
+
+        fn name(&self) -> &'static str {
+            "Easy AI"
+        }
     }
 }

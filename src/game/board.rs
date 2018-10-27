@@ -147,21 +147,7 @@ impl Board {
         // convert array index to coordination
         let coord = CoordinationFlat::new((i + 1) as usize, (j + 1) as usize);
         let data = self.get(coord).unwrap();
-        // let max_index = self.size - 1;
-        // match data {
-        //     BoardPoint::WHITE => "○",
-        //     BoardPoint::BLACK => "●",
-        //     BoardPoint::EMPTY => if i == 0 && j == 0 { "┌" }
-        //               else if i == 0 && j == max_index { "└" }
-        //               else if i == max_index && j == 0 { "┐" }
-        //               else if i == max_index && j == max_index { "┘" }
-        //               else if i == 0 { "├" }
-        //               else if i == max_index { "┤" }
-        //               else if j == 0 { "┬" }
-        //               else if j == max_index { "┴" }
-        //               else { "┼" }
-        //     _ => panic!("Unknown board data detected.")
-        // }
+
         match data {
             BoardPieceType::WHITE => " O",
             BoardPieceType::BLACK => " X",

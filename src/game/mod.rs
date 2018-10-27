@@ -1,6 +1,6 @@
 use game::PieceType::BLACK;
 use game::PieceType::WHITE;
-use game::players::IdiotAi;
+use game::players::ai::IdiotAi;
 use self::board::Board;
 use self::coord::CoordinationFlat;
 use self::players::LocalHumanPlayer;
@@ -120,14 +120,22 @@ impl GameBuilder {
 /// Game context in game, typically is same as Game struct
 ///
 pub(in game) struct GameContext {
-    board: Board
+    /// A board 2D array copy
+    board: Board,
+    /// None if it's first player point
+    last_point: Option<CoordinationFlat>,
+    /// Total pieces in the game
+    total_pieces: usize
 }
 
 impl GameContext {
 
-    pub fn new(board: Board) -> Self {
+    pub fn new(board: Board, last_point: Option<CoordinationFlat>, total_pieces: usize)
+        -> Self {
         GameContext {
-            board
+            board,
+            last_point,
+            total_pieces
         }
     }
 }
@@ -218,7 +226,9 @@ impl Game {
         loop {
             // Initialize the game context every lap
             // TODO Is there a better way to references the board?
-            let context = GameContext::new(self.board.clone());
+            let context = GameContext::new(self.board.clone(),
+                                           self.history.last().map(|z| { z.1 }),
+                                           self.history.len());
 
             // Read input from player
             let coord = self.get_current_player_mut().point(&context);
