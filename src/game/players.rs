@@ -166,9 +166,9 @@ use super::super::PieceType;pub(super) mod ai {
         ///    try the most benefit way.
         /// 3. Calculate scores in every places around the existing pieces with 4 distance
         fn point(&mut self, context: &GameContext) -> CoordinationFlat {
-            let board = context.board;
-            let last = context.last_point;
-            let total = context.total_pieces;
+            let board = &context.board;
+            let last = &context.last_point;
+            let total = &context.total_pieces;
 
             // Found which points should calculate score
             let need_calculate = EasyAi::find_points_need_calculate(&board);
