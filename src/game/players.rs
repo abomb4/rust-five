@@ -89,11 +89,13 @@ impl Player for LocalHumanPlayer {
     }
 }
 
-use game::board::Board;
-use super::Player;
-use super::super::coord::CoordinationFlat;
-use super::super::GameContext;
-use super::super::PieceType;pub(super) mod ai {
+pub(super) mod ai {
+    use super::super::coord::CoordinationFlat;
+    use super::super::GameContext;
+    use super::super::PieceType;
+    use super::Player;
+    use game::board::Board;
+
     pub struct IdiotAi {
         piece: PieceType,
         last: CoordinationFlat
